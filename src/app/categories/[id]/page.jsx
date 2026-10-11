@@ -1,5 +1,6 @@
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { TbTriangleFilled, TbTriangleInvertedFilled } from "react-icons/tb";
 import SortControl from "./SortControl";
 
@@ -79,10 +80,8 @@ export default async function CategoryPage({ params, searchParams }) {
             }
 
             return (
-              <article
-                key={product.id}
-                className="flex min-h-32 min-w-0 flex-col justify-between rounded-lg border border-base-300 bg-base-100 p-4"
-              >
+              <Link key={product.id} href={`/products/${product.id}`} className="block rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700">
+                <article className="flex min-h-32 min-w-0 flex-col justify-between rounded-lg border border-base-300 bg-base-100 p-4 transition-colors hover:border-emerald-700/40">
                 <div className="flex min-w-0 items-center gap-3">
                   <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-base-200 text-xl">
                     {product.image || product.categoryIcon}
@@ -111,7 +110,8 @@ export default async function CategoryPage({ params, searchParams }) {
                     {percentFormat.format(Math.abs(product.change.pct))}%
                   </span>
                 </div>
-              </article>
+                </article>
+              </Link>
             );
           })}
         </div>
