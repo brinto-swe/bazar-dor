@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { FcGoogle } from "react-icons/fc";
 import { FaGithub } from "react-icons/fa";
-import { Button, FieldError, Form, Input, Label, TextField } from "@heroui/react";
 import { signIn } from "@/lib/auth-client";
 
 const SignInPage = () => {
@@ -59,38 +58,36 @@ const SignInPage = () => {
 			</div>
 
 			<div className="w-full max-w-sm rounded-xl border border-base-300 bg-[#fbfdfb] p-5 sm:p-6">
-				<Form onSubmit={handleSignIn} className="flex w-full flex-col gap-4">
-					<TextField isRequired name="email" type="email" autoComplete="email" validate={(value) => /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(value) ? null : "সঠিক ইমেইল ঠিকানা লিখুন।"}>
-						<Label>ইমেইল</Label>
-						<Input placeholder="you@example.com" />
-						<FieldError />
-					</TextField>
+				<form onSubmit={handleSignIn} className="flex w-full flex-col gap-4">
+					<label className="form-control w-full gap-1.5">
+						<span className="label-text text-sm font-medium">ইমেইল</span>
+						<input name="email" type="email" autoComplete="email" placeholder="you@example.com" className="input input-bordered w-full" required />
+					</label>
 
-					<TextField isRequired name="password" type="password" autoComplete="current-password">
-						<Label>পাসওয়ার্ড</Label>
-						<Input placeholder="আপনার পাসওয়ার্ড" />
-						<FieldError />
-					</TextField>
+					<label className="form-control w-full gap-1.5">
+						<span className="label-text text-sm font-medium">পাসওয়ার্ড</span>
+						<input name="password" type="password" autoComplete="current-password" placeholder="কমপক্ষে ৮ অক্ষর" className="input input-bordered w-full" required />
+					</label>
 
 					{errorMessage ? <p role="alert" className="text-sm text-error">{errorMessage}</p> : null}
 					{successMessage ? <p role="status" className="text-sm text-success">{successMessage}</p> : null}
 
-					<Button type="submit" className="w-full bg-emerald-700 text-white hover:bg-emerald-800">
+					<button type="submit" className="btn w-full border-0 bg-emerald-700 text-white hover:bg-emerald-800">
 						সাইন ইন
-					</Button>
-				</Form>
+					</button>
+				</form>
 
 				<div className="divider my-4 text-sm text-base-content/55">অথবা</div>
 
 				<div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-					<Button type="button" onPress={() => handleSocialSignIn("google")} variant="secondary" className="w-full">
+					<button type="button" onClick={() => handleSocialSignIn("google")} className="btn btn-outline border-base-300 bg-base-100 text-sm">
 						<FcGoogle aria-hidden="true" className="size-5" />
 						Google দিয়ে সাইন ইন
-					</Button>
-					<Button type="button" onPress={() => handleSocialSignIn("github")} variant="secondary" className="w-full">
+					</button>
+					<button type="button" onClick={() => handleSocialSignIn("github")} className="btn btn-outline border-base-300 bg-base-100 text-sm">
 						<FaGithub aria-hidden="true" className="size-5" />
 						GitHub দিয়ে সাইন ইন
-					</Button>
+					</button>
 				</div>
 
 				<p className="mt-5 text-center text-sm text-base-content/70">
