@@ -4,18 +4,16 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import HeaderActions from "./HeaderActions";
 import logoIcon from "../../assets/logo-icon.png";
+import { date } from "better-auth";
 
 const CATEGORIES_URL = "https://api.abcz.workers.dev/api/bazardor/categories";
 
 async function TodayDate() {
   await connection();
 
-  const today = new Intl.DateTimeFormat("bn-BD", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }).format(new Date());
+  const today = new Date().toLocaleDateString("bn-BD",{
+    dateStyle: "full",
+  })
 
   return <span className="mt-1 text-xs text-base-content/60">{today}</span>;
 }
