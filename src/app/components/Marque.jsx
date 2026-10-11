@@ -31,9 +31,9 @@ const Marque = async () => {
 		return (
 			<div
 				key={product.id}
-				className="flex h-9 items-center gap-2 border-r border-base-300 px-3 text-[11px] whitespace-nowrap"
+				className="flex h-12 items-center gap-3 border-r border-base-300 px-5 text-sm whitespace-nowrap"
 			>
-				<span className="flex size-5 items-center justify-center rounded-full bg-base-200 text-xs">
+				<span className="flex size-7 items-center justify-center rounded-full bg-base-200 text-base">
 					{product.image || product.categoryIcon}
 				</span>
 				<span className="font-medium">{product.nameBn}</span>
