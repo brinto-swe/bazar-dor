@@ -22,7 +22,9 @@ export default function RootLayout({ children }) {
       className={`${notoSerifBengali.className} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <Header />
+        <Suspense fallback={<div className="h-28 bg-base-100" />}>
+          <Header />
+        </Suspense>
         <Suspense fallback={<div className="h-9 border-y border-base-300 bg-base-100" />}>
           <Marque />
         </Suspense>

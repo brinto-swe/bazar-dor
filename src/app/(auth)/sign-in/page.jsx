@@ -1,0 +1,109 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { FcGoogle } from "react-icons/fc";
+import { FaGithub } from "react-icons/fa";
+import { Button, FieldError, Form, Input, Label, TextField } from "@heroui/react";
+import { signIn } from "@/lib/auth-client";
+
+const SignInPage = () => {
+	const [errorMessage, setErrorMessage] = useState("");
+	const [successMessage, setSuccessMessage] = useState("");
+
+	const handleSignIn = async (event) => {
+		event.preventDefault();
+		setErrorMessage("");
+		setSuccessMessage("");
+
+		const formData = new FormData(event.currentTarget);
+		const data = Object.fromEntries(formData.entries());
+
+		try {
+			const { error } = await signIn.email({
+				email: data.email.toString().trim(),
+				password: data.password.toString(),
+			});
+
+			if (error) {
+				setErrorMessage(error.message || "ইমেইল বা পাসওয়ার্ড সঠিক নয়।");
+				return;
+			}
+
+			setSuccessMessage("সাইন ইন হয়েছে। হোম পেজে যেতে নিচের লিংকে চাপ দিন।");
+		} catch {
+			setErrorMessage("সাইন ইন করা যায়নি। আবার চেষ্টা করুন।");
+		}
+	};
+
+	const handleSocialSignIn = async (provider) => {
+		setErrorMessage("");
+		setSuccessMessage("");
+
+		try {
+			const { error } = await signIn.social({ provider, callbackURL: "/" });
+
+			if (error) {
+				setErrorMessage(error.message || "সাইন ইন করা যায়নি।");
+			}
+		} catch {
+			setErrorMessage("সাইন ইন করা যায়নি। আবার চেষ্টা করুন।");
+		}
+	};
+
+	return (
+		<section className="flex min-h-[calc(100vh-10rem)] flex-col items-center bg-[#f2f6f3] px-4 py-8 sm:py-10">
+			<div className="mb-5 text-center">
+				<h1 className="text-2xl font-bold text-base-content">সাইন ইন করুন</h1>
+				<p className="mt-2 text-sm text-base-content/65">আপনার অ্যাকাউন্টে প্রবেশ করুন।</p>
+			</div>
+
+			<div className="w-full max-w-sm rounded-xl border border-base-300 bg-[#fbfdfb] p-5 sm:p-6">
+				<Form onSubmit={handleSignIn} className="flex w-full flex-col gap-4">
+					<TextField isRequired name="email" type="email" autoComplete="email" validate={(value) => /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(value) ? null : "সঠিক ইমেইল ঠিকানা লিখুন।"}>
+						<Label>ইমেইল</Label>
+						<Input placeholder="you@example.com" />
+						<FieldError />
+					</TextField>
+
+					<TextField isRequired name="password" type="password" autoComplete="current-password">
+						<Label>পাসওয়ার্ড</Label>
+						<Input placeholder="আপনার পাসওয়ার্ড" />
+						<FieldError />
+					</TextField>
+
+					{errorMessage ? <p role="alert" className="text-sm text-error">{errorMessage}</p> : null}
+					{successMessage ? <p role="status" className="text-sm text-success">{successMessage}</p> : null}
+
+					<Button type="submit" className="w-full bg-emerald-700 text-white hover:bg-emerald-800">
+						সাইন ইন
+					</Button>
+				</Form>
+
+				<div className="divider my-4 text-sm text-base-content/55">অথবা</div>
+
+				<div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+					<Button type="button" onPress={() => handleSocialSignIn("google")} variant="secondary" className="w-full">
+						<FcGoogle aria-hidden="true" className="size-5" />
+						Google দিয়ে সাইন ইন
+					</Button>
+					<Button type="button" onPress={() => handleSocialSignIn("github")} variant="secondary" className="w-full">
+						<FaGithub aria-hidden="true" className="size-5" />
+						GitHub দিয়ে সাইন ইন
+					</Button>
+				</div>
+
+				<p className="mt-5 text-center text-sm text-base-content/70">
+					অ্যাকাউন্ট নেই? <Link href="/sign-up" className="font-medium text-emerald-700 hover:underline">নতুন অ্যাকাউন্ট তৈরি করুন</Link>
+				</p>
+				{successMessage ? <Link href="/" className="mt-3 block text-center text-sm font-medium text-emerald-700 hover:underline">হোম পেজে যান</Link> : null}
+			</div>
+
+			<Link href="/" className="mt-5 text-sm text-base-content/60 hover:text-base-content">
+				← হোম পেজে ফিরে যান
+			</Link>
+		</section>
+	);
+};
+
+export default SignInPage;
