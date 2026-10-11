@@ -52,7 +52,7 @@ const Marque = async () => {
 
 	return (
 		<div aria-label="আজকের বাজারদর" className="w-full overflow-hidden border-y border-base-300 bg-base-100">
-			<MarqueeText className="py-1" direction="right" duration={10} pauseOnHover>
+			<MarqueeText className="py-1" direction="right" duration={18} pauseOnHover>
 				{productItems}
 			</MarqueeText>
 		</div>

@@ -56,7 +56,7 @@ const Header = async () => {
           {categories.map((category) => (
             <li key={category.id} className="shrink-0">
               <Link
-                href={`/?category=${encodeURIComponent(category.slug)}`}
+                href={`/categories/${category.id}`}
                 className="flex h-10 items-center gap-2 rounded-md px-3 text-sm font-medium text-base-content/80 transition-colors hover:bg-base-200 hover:text-emerald-800"
               >
                 <span aria-hidden="true" className="text-base">{category.icon}</span>
