@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import ProfileClient from "./ProfileClient";
 
+export const instant = false;
+
 export default async function ProfilePage() {
   const session = await auth.api.getSession({
     headers: await headers(),

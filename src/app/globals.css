@@ -1,8 +1,14 @@
-/* @import url('https://fonts.googleapis.com/css2?family=Baloo+Da+2:wght@400;500;600;700;800&family=Hind+Siliguri:wght@300;400;500;600;700&display=swap'); */
 @import "tailwindcss";
-@import "@heroui/styles";
- @plugin "daisyui" {
-   themes: light --default;
- }
+@plugin "daisyui" {
+  themes: light --default;
+}
 
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  color: #26332c;
+  background: #f2f6f3;
+}
 

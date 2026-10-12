@@ -1,11 +1,57 @@
 import { betterAuth } from "better-auth";
 import { MongoClient } from "mongodb";
 import { mongodbAdapter } from "@better-auth/mongo-adapter";
-import { setServers } from "node:dns";
 
-setServers(["8.8.8.8", "1.1.1.1"]);
+if (!process.env.BETTER_AUTH_DB_URL) {
+  throw new Error("BETTER_AUTH_DB_URL is not configured.");
+}
 
-const addressCache = new Map();
+const DNS_OVER_HTTPS = [
+  "https://cloudflare-dns.com/dns-query",
+  "https://dns.google/resolve",
+];
+
+async function resolveDns(name, type) {
+  for (const endpoint of DNS_OVER_HTTPS) {
+    try {
+      const response = await fetch(
+        `${endpoint}?name=${encodeURIComponent(name)}&type=${type}`,
+        { headers: { accept: "application/dns-json" } },
+      );
+      const body = response.ok ? await response.json() : null;
+      const answers = body?.Answer?.filter((answer) => answer.type === type);
+      if (answers?.length) return answers.map((answer) => answer.data);
+    } catch {
+      // Try the other HTTPS DNS provider.
+    }
+  }
+
+  throw new Error(`MongoDB DNS lookup failed for ${name}`);
+}
+
+async function createMongoConnectionString(connectionString) {
+  if (!connectionString.startsWith("mongodb+srv://")) return connectionString;
+
+  const source = new URL(connectionString);
+  const [srvRecords, txtRecords] = await Promise.all([
+    resolveDns(`_mongodb._tcp.${source.hostname}`, 33),
+    resolveDns(source.hostname, 16).catch(() => []),
+  ]);
+  const hosts = srvRecords.map((record) => {
+    const [, , port, hostname] = record.trim().split(/\s+/);
+    return `${hostname.replace(/\.$/, "")}:${port}`;
+  });
+  const txtOptions = txtRecords
+    .join("")
+    .replace(/^"|"$/g, "")
+    .replace(/"\s*"/g, "");
+  const options = new URLSearchParams(txtOptions);
+
+  for (const [key, value] of source.searchParams) options.set(key, value);
+  options.set("tls", "true");
+
+  return `mongodb://${source.username}:${source.password}@${hosts.join(",")}/${process.env.BETTER_AUTH_DB_NAME || "bazar-dor"}?${options}`;
+}
 
 function lookupMongoHost(hostname, options, callback) {
   if (typeof options === "function") {
@@ -13,70 +59,36 @@ function lookupMongoHost(hostname, options, callback) {
     options = {};
   }
 
-  options = options || {};
-
-  const cachedResult = addressCache.get(hostname);
-
-  if (cachedResult && cachedResult.expiresAt > Date.now()) {
-    if (options.all) {
-      callback(null, cachedResult.addresses.map((address) => ({ address, family: 4 })));
-    } else {
-      callback(null, cachedResult.addresses[0], 4);
-    }
-    return;
-  }
-
-  const dnsUrls = [
-    `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(hostname)}&type=A`,
-    `https://dns.google/resolve?name=${encodeURIComponent(hostname)}&type=A`,
-  ];
-
-  const findAddresses = async () => {
-    for (const url of dnsUrls) {
-      try {
-        const response = await fetch(url, {
-          headers: { accept: "application/dns-json" },
-        });
-
-        if (!response.ok) continue;
-
-        const data = await response.json();
-        const records = (data.Answer || []).filter((answer) => answer.type === 1);
-
-        if (records.length > 0) {
-          return records;
-        }
-      } catch {
-        continue;
+  resolveDns(hostname, 1)
+    .then((addresses) => {
+      if (options?.all) {
+        callback(
+          null,
+          addresses.map((address) => ({ address, family: 4 })),
+        );
+        return;
       }
-    }
-
-    throw new Error(`Could not resolve the MongoDB hostname: ${hostname}`);
-  };
-
-  findAddresses()
-    .then((records) => {
-      const addresses = records.map((record) => record.data);
-
-      const ttl = Math.min(...records.map((record) => record.TTL || 60));
-      addressCache.set(hostname, {
-        addresses,
-        expiresAt: Date.now() + ttl * 1000,
-      });
-
-      if (options.all) {
-        callback(null, addresses.map((address) => ({ address, family: 4 })));
-      } else {
-        callback(null, addresses[0], 4);
-      }
+      callback(null, addresses[0], 4);
     })
     .catch((error) => callback(error));
 }
 
-const client = new MongoClient(process.env.BETTER_AUTH_DB_URL, {
-  lookup: lookupMongoHost,
-});
-const db = client.db();
+const mongoConnectionString = await createMongoConnectionString(
+  process.env.BETTER_AUTH_DB_URL,
+);
+const globalForMongo = globalThis;
+const client =
+  globalForMongo.__bazarDorMongoClient ||
+  new MongoClient(mongoConnectionString, {
+    lookup: lookupMongoHost,
+    serverSelectionTimeoutMS: 15_000,
+  });
+
+if (process.env.NODE_ENV !== "production") {
+  globalForMongo.__bazarDorMongoClient = client;
+}
+
+const db = client.db(process.env.BETTER_AUTH_DB_NAME || "bazar-dor");
 
 const authBaseURL =
   process.env.DEPLOY_PRIME_URL ||
@@ -84,35 +96,64 @@ const authBaseURL =
   process.env.BETTER_AUTH_URL ||
   "http://localhost:3000";
 
+const allowedHosts = [
+  "localhost:*",
+  "127.0.0.1:*",
+  process.env.BETTER_AUTH_URL,
+  process.env.URL,
+  process.env.DEPLOY_PRIME_URL,
+  process.env.DEPLOY_URL,
+]
+  .filter(Boolean)
+  .map((value) => {
+    try {
+      return new URL(value).host;
+    } catch {
+      return value;
+    }
+  });
+
 const trustedOrigins = [
   process.env.BETTER_AUTH_URL,
   process.env.URL,
   process.env.DEPLOY_PRIME_URL,
   process.env.DEPLOY_URL,
   "http://localhost:3000",
+  "http://localhost:*",
+  "http://127.0.0.1:*",
 ]
   .filter(Boolean)
-  .map((origin) => new URL(origin).origin);
+  .map((origin) => {
+    if (origin.includes("*")) return origin;
+
+    try {
+      return new URL(origin).origin;
+    } catch {
+      return origin;
+    }
+  });
 
 export const auth = betterAuth({
-  baseURL: authBaseURL,
+  baseURL: {
+    allowedHosts: [...new Set(allowedHosts)],
+    protocol: "auto",
+    fallback: authBaseURL,
+  },
   secret: process.env.BETTER_AUTH_SECRET,
   trustedOrigins: [...new Set(trustedOrigins)],
   emailAndPassword: {
     enabled: true,
+    minPasswordLength: 8,
   },
   socialProviders: {
-        google: { 
-            clientId: process.env.BETTER_AUTH_GOOGLE_CLIENT_ID, 
-            clientSecret: process.env.BETTER_AUTH_GOOGLE_SECRET, 
-        }, 
-        github: { 
-            clientId: process.env.BETTER_AUTH_GITHUB_CLIENT_ID, 
-            clientSecret: process.env.BETTER_AUTH_GITHUB_CLIENT_SECRET, 
-        }
+    google: {
+      clientId: process.env.BETTER_AUTH_GOOGLE_CLIENT_ID,
+      clientSecret: process.env.BETTER_AUTH_GOOGLE_SECRET,
     },
-
-  database: mongodbAdapter(db, {
-    client,
-  }),
+    github: {
+      clientId: process.env.BETTER_AUTH_GITHUB_CLIENT_ID,
+      clientSecret: process.env.BETTER_AUTH_GITHUB_CLIENT_SECRET,
+    },
+  },
+  database: mongodbAdapter(db, { client }),
 });

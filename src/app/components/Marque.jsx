@@ -1,23 +1,13 @@
 import { TbTriangleFilled, TbTriangleInvertedFilled } from "react-icons/tb";
 import MarqueeText from "react-marquee-text";
+import { connection } from "next/server";
 import "react-marquee-text/dist/styles.css";
-
-const PRODUCTS_URL = "https://api.abcz.workers.dev/api/bazardor/products";
-
-const unitNames = {
-	kg: "কেজি",
-	litre: "লিটার",
-	dozen: "ডজন",
-	piece: "পিস",
-};
+import { getProducts, percentFormat, priceFormat, unitNames } from "@/lib/products";
 
 const Marque = async () => {
-	const response = await fetch(PRODUCTS_URL, { cache: "no-store" });
-	const products = await response.json();
-	const priceFormat = new Intl.NumberFormat("bn-BD");
-	const percentFormat = new Intl.NumberFormat("bn-BD", {
-		maximumFractionDigits: 1,
-	});
+	await connection();
+
+	const products = await getProducts();
 
 	const productItems = products.map((product) => {
 		const isUp = product.change.dir === "up";
@@ -51,8 +41,8 @@ const Marque = async () => {
 	});
 
 	return (
-		<div aria-label="আজকের বাজারদর" className="w-full mx-auto overflow-hidden border-y border-base-300 bg-base-100">
-			<MarqueeText className="py-1" direction="right" duration={18} pauseOnHover>
+		<div aria-label="আজকের বাজারদর" className="w-full overflow-hidden border-b border-[#dce5df] bg-white">
+			<MarqueeText direction="right" duration={28} pauseOnHover>
 				{productItems}
 			</MarqueeText>
 		</div>

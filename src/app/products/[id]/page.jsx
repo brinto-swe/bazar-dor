@@ -3,15 +3,9 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { TbTriangleFilled, TbTriangleInvertedFilled } from "react-icons/tb";
 import { auth } from "@/lib/auth";
+import { getProduct, percentFormat, priceFormat, unitNames } from "@/lib/products";
 
-const API_URL = "https://api.abcz.workers.dev/api/bazardor/products";
-
-const unitNames = {
-  kg: "কেজি",
-  litre: "লিটার",
-  dozen: "ডজন",
-  piece: "পিস",
-};
+export const instant = false;
 
 export default async function ProductPage({ params }) {
   const { id } = await params;
@@ -21,20 +15,9 @@ export default async function ProductPage({ params }) {
     redirect(`/sign-in?callbackURL=${encodeURIComponent(`/products/${id}`)}`);
   }
 
-  const response = await fetch(`${API_URL}/${encodeURIComponent(id)}`, {
-    cache: "no-store",
-  });
-
-  if (!response.ok) {
-    notFound();
-  }
-
-  const product = await response.json();
+  const product = await getProduct(id);
+  if (!product) notFound();
   const markets = Array.isArray(product.markets) ? product.markets : [];
-  const priceFormat = new Intl.NumberFormat("bn-BD");
-  const percentFormat = new Intl.NumberFormat("bn-BD", {
-    maximumFractionDigits: 1,
-  });
   const isUp = product.change.dir === "up";
   const isDown = product.change.dir === "down";
   const changeColor = isUp
@@ -63,7 +46,7 @@ export default async function ProductPage({ params }) {
           <span className="text-base-content">{product.nameBn}</span>
         </nav>
 
-        <section className="flex flex-col items-center justify-between gap-5 rounded-xl border border-base-300 bg-[#fbfdfb] p-5 sm:flex-row sm:p-6">
+        <section className="flex flex-col items-center justify-between gap-5 rounded-2xl border border-[#dce5df] bg-white p-5 sm:flex-row sm:p-6">
           <div className="flex min-w-0 items-center gap-4 self-start">
             <span className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-base-200 text-3xl">
               {product.image || product.categoryIcon}
@@ -92,7 +75,7 @@ export default async function ProductPage({ params }) {
           </div>
         </section>
 
-        <section className="mt-5 rounded-xl border border-base-300 bg-[#fbfdfb] p-4 sm:p-5">
+        <section className="mt-5 rounded-2xl border border-[#dce5df] bg-white p-4 sm:p-5">
           <h2 className="text-lg font-semibold text-base-content">দামের সারসংক্ষেপ</h2>
           <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="rounded-lg border border-base-300 bg-base-100 p-4">
@@ -111,9 +94,22 @@ export default async function ProductPage({ params }) {
               <p className="text-xs text-base-content/55">সব বাজারের গড় দর</p>
             </div>
           </div>
+          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {[
+              ["আজ", product.today],
+              ["গতকাল", product.yesterday],
+              ["গত সপ্তাহ", product.lastWeek],
+              ["গত মাস", product.lastMonth],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-lg bg-[#f2f6f3] p-3 text-center">
+                <p className="text-xs text-slate-500">{label}</p>
+                <p className="mt-1 font-bold">{priceFormat.format(value)} টাকা</p>
+              </div>
+            ))}
+          </div>
         </section>
 
-        <section className="mt-5 rounded-xl border border-base-300 bg-[#fbfdfb] p-4 sm:p-5">
+        <section className="mt-5 rounded-2xl border border-[#dce5df] bg-white p-4 sm:p-5">
           <h2 className="mb-3 text-lg font-semibold text-base-content">বাজারভিত্তিক আজকের দাম</h2>
           <div className="overflow-x-auto rounded-lg border border-base-300">
             <table className="table table-zebra min-w-[620px] text-sm">

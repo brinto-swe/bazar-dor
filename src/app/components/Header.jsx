@@ -4,45 +4,37 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import HeaderActions from "./HeaderActions";
 import logoIcon from "../../assets/logo-icon.png";
-import { date } from "better-auth";
-
-const CATEGORIES_URL = "https://api.abcz.workers.dev/api/bazardor/categories";
+import { getCategories } from "@/lib/products";
 
 async function TodayDate() {
   await connection();
 
-  const today = new Date().toLocaleDateString("bn-BD",{
+  const today = new Date().toLocaleDateString("bn-BD", {
     dateStyle: "full",
-  })
+  });
 
   return <span className="mt-1 text-xs text-base-content/60">{today}</span>;
 }
 
 async function CategoryNavigation() {
+  await connection();
+
   let categories = [];
 
   try {
-    const response = await fetch(CATEGORIES_URL, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(5000),
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      categories = Array.isArray(data) ? data : [];
-    }
+    categories = await getCategories();
   } catch {
     categories = [];
   }
 
   return (
-    <nav id="categories" aria-label="পণ্যের বিভাগ" className="border-t border-base-200">
-      <ul className="mx-auto flex h-12 max-w-6xl items-center gap-2 overflow-x-auto px-4 scrollbar-none sm:gap-3 sm:px-6">
+    <nav id="categories" aria-label="পণ্যের বিভাগ" className="border-t border-[#edf1ee]">
+      <ul className="mx-auto flex h-12 max-w-6xl items-center gap-1 overflow-x-auto px-4 sm:px-6">
         {categories.map((category) => (
           <li key={category.id} className="shrink-0">
             <Link
               href={`/categories/${category.id}`}
-              className="flex h-10 items-center gap-2 rounded-md px-3 text-sm font-medium text-base-content/80 transition-colors hover:bg-base-200 hover:text-emerald-800"
+              className="flex h-9 items-center gap-2 rounded-lg px-3 text-sm font-semibold text-[#34413a] transition-colors hover:bg-emerald-700 hover:text-white"
             >
               <span aria-hidden="true" className="text-base">{category.icon}</span>
               <span>{category.nameBn}</span>
@@ -66,14 +58,14 @@ function CategoryNavigationFallback() {
 
 function Header() {
   return (
-    <header className="border-b border-base-300 bg-base-100">
+    <header className="border-b border-[#e3e9e5] bg-white">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-3 text-base-content">
-          <span className="flex size-10 items-center justify-center rounded-lg bg-emerald-700 text-white">
-            <Image src={logoIcon} alt="" className="size-4.5 brightness-0 invert" />
+          <span className="flex size-10 items-center justify-center rounded-xl bg-emerald-700 text-white">
+            <Image src={logoIcon} alt="" className="size-5 brightness-0 invert" />
           </span>
           <span className="flex flex-col leading-tight">
-            <span className="text-lg font-bold">বাজার দর</span>
+            <span className="text-xl font-extrabold text-[#26332c]">বাজার দর</span>
             <Suspense fallback={<span className="mt-1 text-xs text-base-content/60">আজ</span>}>
               <TodayDate />
             </Suspense>

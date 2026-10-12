@@ -1,36 +1,45 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# বাজার দর
 
-## Getting Started
+বাংলাদেশের নিত্যপ্রয়োজনীয় পণ্যের বর্তমান বাজারদর দেখার responsive Next.js application।
 
-First, run the development server:
+## Local setup
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+`.env`-এ নিচের variables দিন:
+
+```env
+BETTER_AUTH_SECRET=
+BETTER_AUTH_URL=http://localhost:3000
+BETTER_AUTH_DB_URL=mongodb+srv://...
+BETTER_AUTH_DB_NAME=bazar-dor
+BETTER_AUTH_GOOGLE_CLIENT_ID=
+BETTER_AUTH_GOOGLE_SECRET=
+BETTER_AUTH_GITHUB_CLIENT_ID=
+BETTER_AUTH_GITHUB_CLIENT_SECRET=
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+তারপর চালান:
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+```bash
+npm install
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## OAuth callback URLs
 
-## Learn More
+- Local Google: `http://localhost:3000/api/auth/callback/google`
+- Local GitHub: `http://localhost:3000/api/auth/callback/github`
+- Production Google: `https://your-domain.com/api/auth/callback/google`
+- Production GitHub: `https://your-domain.com/api/auth/callback/github`
 
-To learn more about Next.js, take a look at the following resources:
+Production host-এ `.env` file upload না করে hosting dashboard-এ একই environment variables যোগ করতে হবে।
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## MongoDB collections
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Better Auth data MongoDB Atlas-এর `bazar-dor` database-এ লেখা হয়। Atlas-এ **Browse Collections → bazar-dor** খুললে `user`, `account`, `session` collections দেখা যাবে। **Database Access → Database Users** শুধু MongoDB connection credentials দেখায়; application users সেখানে দেখা যায় না।
 
-## Deploy on Vercel
+## Checks
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run lint
+npm run build
+```

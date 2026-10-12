@@ -2,10 +2,24 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 import { signOut, useSession } from "@/lib/auth-client";
 
 export default function HeaderActions() {
   const { data: session, isPending } = useSession();
+  const router = useRouter();
+
+  async function handleSignOut() {
+    const { error } = await signOut();
+    if (error) {
+      toast.error(error.message || "সাইন আউট করা যায়নি।");
+      return;
+    }
+    toast.success("সাইন আউট হয়েছে।");
+    router.push("/");
+    router.refresh();
+  }
 
   if (isPending) {
     return <div className="skeleton h-10 w-36" aria-label="সেশন লোড হচ্ছে" />;
@@ -15,7 +29,7 @@ export default function HeaderActions() {
     return (
       <div className="flex items-center gap-2">
         <Link className="btn btn-ghost btn-sm" href="/sign-in">সাইন ইন</Link>
-        <Link className="btn bg-emerald-700 text-white btn-sm hover:bg-emerald-800" href="/sign-up">সাইন আপ</Link>
+        <Link className="btn btn-sm border-0 bg-emerald-700 text-white shadow-sm hover:bg-emerald-800" href="/sign-up">সাইন আপ</Link>
       </div>
     );
   }
@@ -49,7 +63,7 @@ export default function HeaderActions() {
         </div>
         <button
           type="button"
-          onClick={() => signOut()}
+          onClick={handleSignOut}
           className="btn btn-ghost btn-sm mt-1 w-full justify-start text-error"
         >
           সাইন আউট

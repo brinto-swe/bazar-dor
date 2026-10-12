@@ -3,71 +3,8 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { TbTriangleFilled, TbTriangleInvertedFilled } from "react-icons/tb";
 import bazarHero from "../assets/bazar-hero.png";
-
-const PRODUCTS_URL = "https://api.abcz.workers.dev/api/bazardor/products";
-
-const unitNames = {
-  kg: "কেজি",
-  litre: "লিটার",
-  dozen: "ডজন",
-  piece: "পিস",
-};
-
-function ProductCard({ product }) {
-  const isUp = product.change.dir === "up";
-  const isDown = product.change.dir === "down";
-  const priceFormat = new Intl.NumberFormat("bn-BD");
-  const percentFormat = new Intl.NumberFormat("bn-BD", {
-    maximumFractionDigits: 1,
-  });
-
-  let changeColor = "bg-base-200 text-base-content/60";
-
-  if (isUp) {
-    changeColor = "bg-error/10 text-error";
-  } else if (isDown) {
-    changeColor = "bg-success/10 text-success";
-  }
-
-  return (
-    <Link href={`/products/${product.id}`} className="block rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700">
-      <article className="flex min-h-32 min-w-0 flex-col justify-between rounded-lg border border-base-300 bg-base-100 p-4 transition-colors hover:border-emerald-700/40">
-      <div className="flex min-w-0 items-center gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-base-200 text-xl">
-          {product.image || product.categoryIcon}
-        </span>
-        <div className="min-w-0">
-          <h3 className="truncate text-base font-semibold leading-tight text-base-content">
-            {product.nameBn}
-          </h3>
-          <p className="mt-1 truncate text-sm leading-tight text-base-content/55">
-            {product.categoryNameBn}
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-3 flex items-end justify-between gap-2">
-        <div>
-          <p className="text-xs leading-tight text-base-content/55">সর্বশেষ দাম</p>
-          <p className="mt-1 text-base font-bold leading-tight">
-            {priceFormat.format(product.today)} টাকা
-            <span className="ml-1 text-xs font-normal text-base-content/60">
-              /{unitNames[product.unit] || product.unit}
-            </span>
-          </p>
-        </div>
-
-        <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold ${changeColor}`}>
-          {isUp ? <TbTriangleFilled aria-hidden="true" /> : null}
-          {isDown ? <TbTriangleInvertedFilled aria-hidden="true" /> : null}
-          {!isUp && !isDown ? <span aria-hidden="true">−</span> : null}
-          {percentFormat.format(Math.abs(product.change.pct))}%
-        </span>
-      </div>
-      </article>
-    </Link>
-  );
-}
+import ProductCard from "./components/ProductCard";
+import { getProducts } from "@/lib/products";
 
 function ProductSection({ title, products, id, direction }) {
   return (
@@ -80,7 +17,7 @@ function ProductSection({ title, products, id, direction }) {
         ) : null}
         {title}
       </h2>
-      <div className="mt-4 grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-4 grid grid-cols-1 gap-4 min-[520px]:grid-cols-2 lg:grid-cols-3">
         {products.map((product) => (
           <ProductCard key={product.id} product={product} />
         ))}
@@ -92,18 +29,17 @@ function ProductSection({ title, products, id, direction }) {
 export default async function Home() {
   await connection();
 
-  const response = await fetch(PRODUCTS_URL, { cache: "no-store" });
-  const products = await response.json();
+  const products = await getProducts();
 
   const increasedProducts = products
     .filter((product) => product.change.dir === "up")
     .sort((first, second) => second.change.pct - first.change.pct)
-    .slice(0, 6);
+    .slice(0, 3);
 
   const decreasedProducts = products
     .filter((product) => product.change.dir === "down")
     .sort((first, second) => first.change.pct - second.change.pct)
-    .slice(0, 6);
+    .slice(0, 3);
 
   const today = new Intl.DateTimeFormat("bn-BD", {
     weekday: "long",
@@ -113,9 +49,9 @@ export default async function Home() {
   }).format(new Date());
 
   return (
-    <main className="min-h-screen bg-[#f2f6f3] px-4 pb-12 pt-6 sm:px-8">
+    <div className="min-h-screen bg-[#f2f6f3] px-4 pb-14 pt-6 sm:px-8">
       <div className="mx-auto max-w-6xl">
-        <section className="grid min-h-56 grid-cols-1 items-center gap-4 rounded-xl border border-base-300 bg-[#fbfdfb] px-4 py-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:gap-8 sm:px-8">
+        <section className="grid min-h-64 grid-cols-1 items-center gap-4 rounded-2xl border border-[#dce5df] bg-white px-5 py-6 sm:grid-cols-[minmax(0,1fr)_16rem] sm:gap-8 sm:px-8">
           <div className="min-w-0">
             <span className="inline-flex rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-medium text-emerald-800">
               {today}
@@ -130,7 +66,7 @@ export default async function Home() {
               href="#all-products"
               className="btn mt-5 h-11 min-h-11 rounded-md border-0 bg-emerald-700 px-6 text-sm text-white shadow-sm hover:bg-emerald-800"
             >
-              সব পণ্যের দাম
+              সব পণ্য দেখুন
             </Link>
           </div>
 
@@ -159,13 +95,13 @@ export default async function Home() {
     <section id="all-products" className="mt-8">
       <h2 className="text-xl font-bold text-base-content">সব পণ্য</h2>
       <p className="mt-2 text-sm text-base-content/55">আজকের সব পণ্যের বাজারদর দেখুন</p>
-      <div className="mt-4 grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-4 grid grid-cols-1 gap-4 min-[520px]:grid-cols-2 lg:grid-cols-3">
         {products.map((product) => (
           <ProductCard key={product.id} product={product} />
         ))}
       </div>
     </section>
       </div>
-    </main>
+    </div>
   );
 }
